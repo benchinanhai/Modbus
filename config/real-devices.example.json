@@ -1,0 +1,25 @@
+[
+  {
+    "id": "R-01",
+    "name": "一号线温度变送器",
+    "model": "MB-REAL",
+    "transport": "TCP",
+    "host": "192.168.1.10",
+    "port": 502,
+    "serialPort": "/dev/ttyUSB0",
+    "baud": 9600,
+    "parity": "N",
+    "dataBits": 8,
+    "stopBits": 1,
+    "slaveId": 1,
+    "serial": "DEV-REAL-CN-SH-2026-00000000000042",
+    "tempAddress": 0,
+    "tempOrder": "ABCD",
+    "humAddress": 2,
+    "humScale": 0.1,
+    "currentAddress": 3,
+    "currentScale": 0.1,
+    "setpointAddress": 8,
+    "alarmAddress": 9
+  }
+]

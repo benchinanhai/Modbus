@@ -1,0 +1,21 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: modbus-gateway:0.2.0
+    container_name: modbus-gateway
+    ports:
+      - "8080:8080"
+      - "1502:1502"
+    volumes:
+      - ./config:/app/config
+      # RTU 设备：取消注释并把 /dev/ttyUSB0 换成实际串口
+      # devices:
+      #   - "/dev/ttyUSB0:/dev/ttyUSB0"
+    environment:
+      GATEWAY_CONFIG: /app/config/real-devices.json
+    extra_hosts:
+      # 让容器内的真实设备可以通过 host.docker.internal 访问宿主机上的从站
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

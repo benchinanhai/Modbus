@@ -1,0 +1,7 @@
+.git
+.idea
+*.log
+backend/target
+backend/src/main/resources/static
+frontend/node_modules
+frontend/dist
