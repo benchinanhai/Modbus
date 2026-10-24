@@ -43,14 +43,6 @@ source env.sh
 # http://localhost:8080
 ```
 
-### Docker
-
-```bash
-cd /home/xujin/gateway
-sudo usermod -aG docker $USER   # 首次使用：把当前用户加入 docker 组，重新登录生效
-./scripts/deploy-docker.sh      # 构建镜像 + 启动 + 健康检查
-# 打开 http://localhost:8080
-```
 
 镜像内前端与后端同源，开放两个端口：
 
@@ -71,13 +63,13 @@ devices:
   - "/dev/ttyUSB0:/dev/ttyUSB0"
 ```
 
-### 把镜像发给面试官
+### 把镜像打包
 
 ```bash
 docker save modbus-gateway:0.2.0 | gzip > modbus-gateway-0.2.0.tar.gz
 ```
 
-面试官本地部署：
+本地部署：
 
 ```bash
 docker load -i modbus-gateway-0.2.0.tar.gz
