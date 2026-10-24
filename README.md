@@ -207,6 +207,66 @@ backend/src/main/java/com/example/gateway/
 | GET | `/api/modbus/read` | 直连 TCP 从站读保持寄存器 |
 | WS | `/ws/telemetry` | 遥测、日志、指令 |
 
+## 联通云部署（HexHub）
+
+目标：把镜像部署到联通云服务器，防火墙映射后外网通过 **9527** 端口访问控制台。
+
+### 1. 本机构建并导出镜像
+
+```bash
+cd /home/xujin/gateway
+sudo docker build -t modbus-gateway:0.2.0 .
+sudo docker save modbus-gateway:0.2.0 | gzip > modbus-gateway-0.2.0.tar.gz
+```
+
+（已加入 docker 组并重新登录的用户可去掉 sudo；联通云标准实例为 x86_64，与本机构建架构一致。）
+
+### 2. 上传到联通云服务器
+
+```bash
+scp modbus-gateway-0.2.0.tar.gz user@服务器IP:/opt/modbus/
+```
+
+也可用 HexHub 的文件管理直接上传。
+
+### 3. 服务器上导入并启动
+
+```bash
+cd /opt/modbus
+docker load -i modbus-gateway-0.2.0.tar.gz
+mkdir -p config
+docker run -d --name modbus-gateway \
+  -p 9527:8080 -p 1502:1502 \
+  -v /opt/modbus/config:/app/config \
+  --restart unless-stopped \
+  modbus-gateway:0.2.0
+```
+
+用 HexHub 的话：镜像页「导入」tar → 容器页「创建容器」选择镜像，端口映射
+`9527 -> 8080`、`1502 -> 1502`，挂载目录 `/opt/modbus/config -> /app/config`。
+
+### 4. 防火墙 / 安全组
+
+联通云控制台安全组（或防火墙）放行：
+
+| 端口 | 协议 | 用途 | 建议 |
+|---|---|---|---|
+| 9527 | TCP | Web 控制台（外网访问） | 必须放行 |
+| 1502 | TCP | Modbus TCP 从站 | 仅在需要外网读写时放行，建议源 IP 白名单 |
+
+服务器系统防火墙（ufw/firewalld）同步放行；22 端口维持原状。
+
+### 5. 验证
+
+浏览器打开 `http://服务器公网IP:9527`；从外部用 Modbus 主站连
+`服务器公网IP:1502`，Unit 见「设备接入」页从表面板。
+
+### 安全提示
+
+- 1502 从站无鉴权，公网开放时务必配置源 IP 白名单，或仅在内网/VPN 内使用。
+- 9527 建议后续加 Nginx 反向代理 + HTTPS + 认证。
+- 接入真实设备时，在「设备接入」页填设备在联通云内网/专线可达的地址。
+
 ## 编码规范
 
 - 后端遵循阿里巴巴 Java 开发手册：类/方法 Javadoc、常量替代魔法值、显式 `ScheduledThreadPoolExecutor`、线程命名、并发集合。
