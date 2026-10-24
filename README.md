@@ -207,43 +207,34 @@ backend/src/main/java/com/example/gateway/
 | GET | `/api/modbus/read` | 直连 TCP 从站读保持寄存器 |
 | WS | `/ws/telemetry` | 遥测、日志、指令 |
 
-## 联通云部署（HexHub）
+## 联通云部署（HexHub 直连服务器）
 
-目标：把镜像部署到联通云服务器，防火墙映射后外网通过 **9527** 端口访问控制台。
+目标：在联通云服务器上直接部署，防火墙映射后外网通过 **9527** 端口访问控制台，
+1502 端口对外提供 Modbus TCP 从站。
 
-### 1. 本机构建并导出镜像
+### 1. HexHub 连接服务器
 
-```bash
-cd /home/xujin/gateway
-sudo docker build -t modbus-gateway:0.2.0 .
-sudo docker save modbus-gateway:0.2.0 | gzip > modbus-gateway-0.2.0.tar.gz
-```
+HexHub 安装在联通云服务器上（默认 9876 端口），浏览器打开 HexHub 界面，
+添加/选择这台联通云服务器，即获得终端、文件管理与 Docker 可视化能力。
 
-（已加入 docker 组并重新登录的用户可去掉 sudo；联通云标准实例为 x86_64，与本机构建架构一致。）
-
-### 2. 上传到联通云服务器
+### 2. 服务器上拉取代码（HexHub 终端）
 
 ```bash
-scp modbus-gateway-0.2.0.tar.gz user@服务器IP:/opt/modbus/
+# 服务器没有 git 时先安装
+apt update && apt install -y git
+git clone https://github.com/benchinanhai/Modbus.git /opt/modbus-src
+cd /opt/modbus-src
 ```
 
-也可用 HexHub 的文件管理直接上传。
-
-### 3. 服务器上导入并启动
+### 3. 构建镜像并启动（HexHub 终端）
 
 ```bash
-cd /opt/modbus
-docker load -i modbus-gateway-0.2.0.tar.gz
-mkdir -p config
-docker run -d --name modbus-gateway \
-  -p 9527:8080 -p 1502:1502 \
-  -v /opt/modbus/config:/app/config \
-  --restart unless-stopped \
-  modbus-gateway:0.2.0
+docker compose -f docker-compose.cloud.yml up --build -d
 ```
 
-用 HexHub 的话：镜像页「导入」tar → 容器页「创建容器」选择镜像，端口映射
-`9527 -> 8080`、`1502 -> 1502`，挂载目录 `/opt/modbus/config -> /app/config`。
+云上构建已内置国内加速：npm 走 npmmirror、Maven 走阿里云镜像。
+基础镜像（node/maven/eclipse-temurin）从 Docker Hub 拉取，慢的话在服务器的
+`/etc/docker/daemon.json` 配置镜像加速后 `systemctl restart docker`。
 
 ### 4. 防火墙 / 安全组
 
@@ -260,6 +251,16 @@ docker run -d --name modbus-gateway \
 
 浏览器打开 `http://服务器公网IP:9527`；从外部用 Modbus 主站连
 `服务器公网IP:1502`，Unit 见「设备接入」页从表面板。
+
+### 备选：本机构建镜像 tar 上传
+
+不习惯在服务器上构建时，可在本地构建并导出，HexHub 文件管理上传后 `docker load`：
+
+```bash
+sudo docker build -t modbus-gateway:0.2.0 .
+sudo docker save modbus-gateway:0.2.0 | gzip > modbus-gateway-0.2.0.tar.gz
+# 服务器上：docker load -i modbus-gateway-0.2.0.tar.gz 后按第 3 步启动（免构建）
+```
 
 ### 安全提示
 

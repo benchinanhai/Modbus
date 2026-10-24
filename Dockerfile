@@ -4,13 +4,16 @@
 FROM node:22-alpine AS frontend
 WORKDIR /workspace/frontend
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# 国内网络加速：npmmirror
+RUN npm config set registry https://registry.npmmirror.com && npm ci --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
 # ---------- 后端构建（把前端产物打进 jar） ----------
 FROM maven:3.9.9-eclipse-temurin-21 AS backend
 WORKDIR /workspace
+# 国内网络加速：阿里云 Maven 镜像
+COPY backend/mvn-settings.xml /root/.m2/settings.xml
 COPY backend/pom.xml ./backend/pom.xml
 COPY backend/src ./backend/src
 COPY --from=frontend /workspace/frontend/dist ./backend/src/main/resources/static
